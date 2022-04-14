@@ -43,10 +43,10 @@ def main():
     path = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(path+'/'+db_filename)
     cur = conn.cursor()
-    add_to_database(cur, conn, "disease",'met.db', 0, 25)
-    add_to_database(cur, conn, "disease",'met.db', 25, 50)
-    add_to_database(cur, conn, "disease",'met.db', 50, 75)
-    add_to_database(cur, conn, "disease",'met.db', 75, 100)
+    add_to_database(cur, conn, "disease",'art.db', 0, 25)
+    add_to_database(cur, conn, "disease",'art.db', 25, 50)
+    add_to_database(cur, conn, "disease",'art.db', 50, 75)
+    add_to_database(cur, conn, "disease",'art.db', 75, 100)
 
 if __name__ == "__main__":
     main()
