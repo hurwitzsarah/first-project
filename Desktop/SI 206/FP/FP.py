@@ -47,27 +47,6 @@ def add_to_database(cur, conn, query, start, end):
                 cur.execute('''INSERT or ignore INTO met_objects (object_id, artist_name, title, object_enddate, objectname, medium, is_highlight) 
                 VALUES (?,?,?,?,?,?,?)''',(id, title, artist_name, object_enddate, objectname, medium, is_highlight))
             conn.commit()
-
-    # cur.execute("CREATE TABLE IF NOT EXISTS met_names (name_id INTEGER PRIMARY KEY, objectname TEXT)")
-    # for i in range(len(no_repeats_names)):
-    #     cur.execute('''INSERT or ignore INTO met_names (name_id, objectname) VALUES (?,?)''',(i, no_repeats_names[i]))
-    #     cur.execute("SELECT name_id FROM met_names WHERE objectname = ?", (no_repeats_names[i],)) 
-    #     name_id = int(cur.fetchone()[0])
-    #     cur.execute('''INSERT or ignore INTO met_objects (name_id) VALUES (?)''',(name_id,))
-
-    # cur.execute("CREATE TABLE IF NOT EXISTS met_artists (artist_id INTEGER PRIMARY KEY, artist_name TEXT)")
-    # for i in range(len(no_repeats_artists)):
-    #     cur.execute('''INSERT or ignore INTO met_artists (artist_id, artist_name) VALUES (?,?)''',(i, no_repeats_artists[i]))
-    #     cur.execute('''SELECT met_artists.artist_id FROM met_artists WHERE artist_name = ?''', (no_repeats_artists[i],))
-    #     artist_id = int(cur.fetchone()[0])
-    #     cur.execute('''INSERT or ignore INTO met_objects (artist_id) VALUES (?)''', (artist_id,))
-
-    # cur.execute("CREATE TABLE IF NOT EXISTS met_mediums (medium_id INTEGER PRIMARY KEY, medium TEXT)")
-    # for i in range(len(no_repeats_mediums)):
-    #     cur.execute('''INSERT or ignore INTO met_mediums (medium_id, medium) VALUES (?,?)''',(i, no_repeats_mediums[i]))
-    #     cur.execute('''SELECT met_mediums.medium_id FROM met_mediums WHERE medium = ?''', (no_repeats_mediums[i],))
-    #     medium_id = int(cur.fetchone()[0])
-    #     cur.execute('''INSERT or ignore INTO met_objects (medium_id) VALUES (?)''',(medium_id,))
         
 def create_name_table(cur, conn):
     cur.execute('''SELECT met_objects.objectname FROM met_objects''')
@@ -146,7 +125,7 @@ def names_and_highlights(cur, conn, file):
     #count of highlights and which years had the most highlighted pieces 
     #make one more based on my data for EC
     cur.execute('''SELECT met_names.name_id, met_objects.is_highlight FROM met_objects JOIN met_names 
-    ON met_objects.objectname = met_names.objectname WHERE met_objects.is_highlight = ?''', (1,))
+    ON met_objects.objectname = met_names.name_id WHERE met_objects.is_highlight = ?''', (1,))
     conn.commit()
     lst = cur.fetchall()
     object_counts = {}
@@ -172,8 +151,8 @@ def names_and_highlights(cur, conn, file):
     plt.show()
 
 def extra_credit_viz(cur, conn, file):
-    cur.execute('''SELECT met_names.name_id, met_objects.medium FROM met_objects JOIN met_names 
-    ON met_objects.objectname = met_names.objectname WHERE met_names.name_id = ?''', (3,))
+    cur.execute('''SELECT met_objects.objectname, met_mediums.medium FROM met_objects JOIN met_mediums 
+    ON met_objects.medium = met_mediums.medium_id WHERE met_objects.objectname = ?''', (3,))
     conn.commit()
     lst = cur.fetchall()
     medium_counts = {}
@@ -192,39 +171,6 @@ def extra_credit_viz(cur, conn, file):
     plt.pie(y, labels = mediums, colors = mycolors) 
     plt.title("'Activist' Paintings By Medium at the Met")
     plt.show()
-
-def update_table(cur, conn, query, start, end):
-    create_name_table(cur, conn)
-    create_medium_table(cur, conn)
-    create_artist_table(cur, conn)
-    object_ids = get_ids(cur, conn, query)
-    for id in object_ids[start:end]:
-        object_url = "https://collectionapi.metmuseum.org/public/collection/v1/objects/" + str(id)
-        res = requests.get(object_url)
-        data = json.loads(res.text)
-        for k, v in data.items():
-            if v!= None:
-                artist_name = data.get("artistDisplayName", 0)
-                objectname = data.get("objectName", 0)
-                medium = data.get("medium", 0)
-
-            cur.execute("SELECT artist_id FROM met_artists WHERE artist_name = ?", (artist_name,)) 
-            conn.commit()
-            artist_id = int(cur.fetchone()[0])
-            cur.execute("UPDATE met_objects SET artist_name = ? WHERE artist_name = ?", (artist_id, artist_name))
-            conn.commit()
-
-            cur.execute("SELECT medium_id FROM met_mediums WHERE medium = ?", (medium,)) 
-            conn.commit()
-            medium_id = int(cur.fetchone()[0])
-            cur.execute("UPDATE met_objects SET medium = ? WHERE medium = ?", (medium_id, medium))
-            conn.commit()
-
-            cur.execute("SELECT name_id FROM met_names WHERE objectname = ?", (objectname,)) 
-            conn.commit()
-            name_id = int(cur.fetchone()[0])
-            cur.execute("UPDATE met_objects SET objectname = ? WHERE objectname = ?", (name_id, objectname))   
-            conn.commit()
 
 def update_table(cur, conn):
     cur.execute('''SELECT artist_id, artist_name FROM met_artists''')
@@ -276,10 +222,9 @@ def main():
     create_medium_table(cur, conn)
     create_artist_table(cur, conn)
     update_table(cur, conn)
-    
-    #dates_and_highlights(cur, conn, 'calculations.txt')
-    # names_and_highlights(cur, conn, 'calculations.txt')
-    # extra_credit_viz(cur, conn, 'calculations.txt')
+    dates_and_highlights(cur, conn, 'calculations.txt')
+    names_and_highlights(cur, conn, 'calculations.txt')
+    extra_credit_viz(cur, conn, 'calculations.txt')
     
 
 if __name__ == "__main__":
